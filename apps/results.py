@@ -4,6 +4,10 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from app import app
 
+import boto3
+
+client = boto3.client('dynamodb')
+
 layout = html.Div([
 
     # navbar
