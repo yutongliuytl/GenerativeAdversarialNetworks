@@ -17,9 +17,9 @@ layout = html.Div([
             dbc.NavbarToggler(id="navbar-toggler"),
             dbc.Collapse(
                 dbc.Nav([
-                    dbc.NavItem(dbc.NavLink("Home", href="/"), active=True),
+                    dbc.NavItem(dbc.NavLink("Home", href="/")),
                     dbc.NavItem(dbc.NavLink("Training", href="/training")),
-                    dbc.NavItem(dbc.NavLink("Results", href="/results")),
+                    dbc.NavItem(dbc.NavLink("Results", href="/results"), active=True),
                 ], navbar=True),
                 id="navbar-collapse",
                 navbar=True,

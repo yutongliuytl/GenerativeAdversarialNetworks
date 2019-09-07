@@ -26,7 +26,7 @@ layout = html.Div([
 
     dbc.Container([
 
-        html.H1("Generative Adversarial Network Dashboard Homepage", style={'padding':'1%', 'textAlign': 'center'}),
+        html.H1("Generative Adversarial Network Dashboard Homepage", style={'padding':'1%', 'textAlign': 'center','margin-top':'100px'}),
 
         dbc.Row([
             dbc.Col([

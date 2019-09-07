@@ -17,8 +17,8 @@ layout = html.Div([
             dbc.NavbarToggler(id="navbar-toggler"),
             dbc.Collapse(
                 dbc.Nav([
-                    dbc.NavItem(dbc.NavLink("Home", href="/"), active=True),
-                    dbc.NavItem(dbc.NavLink("Training", href="/training")),
+                    dbc.NavItem(dbc.NavLink("Home", href="/")),
+                    dbc.NavItem(dbc.NavLink("Training", href="/training"), active=True),
                     dbc.NavItem(dbc.NavLink("Results", href="/results")),
                 ], navbar=True),
                 id="navbar-collapse",
@@ -101,7 +101,7 @@ layout = html.Div([
                                 dbc.Col(html.P("Generator Learning Rate:"), width=6),
                                 dbc.Col(html.P(id='lr-generator'), width=2, style={'text-align':'left'}),
                                 dbc.Col(width=4)
-                            ]),
+                            ], style={'margin-bottom':'10px'}),
                             dbc.Row([
                                 dbc.Col(width=1),
 
@@ -122,7 +122,7 @@ layout = html.Div([
                                 dbc.Col(html.P("Discriminator Learning Rate:"), width=6),
                                 dbc.Col(html.P(id='lr-discriminator'), width=2, style={'text-align':'left'}),
                                 dbc.Col(width=3)
-                            ]),
+                            ], style={'margin-bottom':'10px'}),
                             dbc.Row([
                                 dbc.Col(width=1),
 
@@ -140,14 +140,14 @@ layout = html.Div([
                     # buttons
                     dbc.Row([
                         dbc.Col([
-                            dbc.Button("Train", id='train-gan-btn', outline=True, color="success", className="mr-1")
+                            dbc.Button("Train Model", id='train-gan-btn', outline=True, color="success", className="mr-1")
                         ],style={'text-align':'center'},id='train-gan'),
-                    ],style={'padding':'0 0 0 0'})
+                    ],style={'padding':'25px 0 0 0'})
                 ],width=4),
                 # graphs output
-                dbc.Col(id='gan_graphs',style={'margin-top':'75px'})
+                dbc.Col(id='gan_graphs',style={'padding':'0 100px'})
             ])
-        ],style={'padding':'30px','margin-top':'-20px'}),
+        ],style={'padding':'50px'}),
     ]),
     # intervals
     html.Div([
