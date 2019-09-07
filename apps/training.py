@@ -31,7 +31,7 @@ layout = html.Div([
     dbc.Row([
         dbc.Col([
             # page title
-            dbc.Row(dbc.Col([html.H3("Training Parameters")],style={'padding-bottom':'25px'},width=12)),
+            dbc.Row(dbc.Col([html.H3("Training Parameters")],style={'padding-bottom':'50px','padding-top':'25px'},width=12)),
             #page content
             dbc.Row([
                 # training parameters
@@ -43,7 +43,7 @@ layout = html.Div([
                         ),
                         dbc.Col([
                             dcc.Input(type='text',value='default_gan',id='name-gan',required=True,style={'width':'100%'})
-                        ],width=8),
+                        ],style={'padding-bottom':'25px'},width=8),
                     ]),
                     # choose dataset
                     dbc.Row([
@@ -52,50 +52,91 @@ layout = html.Div([
                         ]),
                         dbc.Col([
                             dcc.Dropdown(
-                                options=[{'label':'MNIST', 'value':'mnist'}],
+                                options=[{'label':'MNIST', 'value':'mnist'},
+                                          {'label':'Fashion-MNIST', 'value':'fashion_mnist'},
+                                          {'label':'Kuzushiji-MNIST', 'value':'kmnist'},
+                                          {'label':'EMNIST', 'value':'emnist'},
+                                          {'label':'QMNIST', 'value':'qmnist'}],
                                 value='mnist',
                                 id='choose-dataset-value-gan',
                                 clearable=False,
                                 style={'margin':'15px 0'}
                             ),
-                        ],width=8),
+                        ],style={'padding-bottom':'10px'},width=8),
                     ]),
-                    # gen model
+
                     dbc.Row([
-                        dbc.Col([html.P("Generator Model:")],width=5,style={'display':'flex','flex-direction':'row','align-items':'center','padding-top':'13px'}),
-                        dbc.Col([
-                            dcc.Dropdown(
-                                options=[
-                                    {'label':'Multi Layer Perceptron','value':'mlp'}
-                                ],
-                                value='mlp',
-                                id='ml-model-gen',
-                                clearable=False,
-                                style={'margin':'15px 0'}
-                            ),
-                        ],width=7)
-                    ],style={'display':'none'}),
-                    # disc model
+                        dbc.Col(html.P("Batch-Size: "),width=3,style={'display':'flex','flex-direction':'row','align-items':'center'}),
+                        dbc.Col(dcc.Dropdown(
+                            options=[
+                                {'label':'128','value':128},
+                                {'label':'256','value':256},
+                                {'label':'512','value':512},
+                                {'label':'1024','value':1024},
+                                {'label':'2048','value':2048},
+                            ],
+                            value='1024',
+                            id='batch-size-gan',
+                            clearable=False,
+                            style={'margin':'15px 0'}
+                        ),style={'padding-bottom':'25px'},width=9)
+                    ]),
+                    # epochs
                     dbc.Row([
-                        dbc.Col([html.P("Discriminator Model:")],width=5,style={'display':'flex','flex-direction':'row','align-items':'center','padding-top':'13px'}),
-                        dbc.Col([
-                            dcc.Dropdown(
-                                options=[
-                                    {'label':'Multi Layer Perceptron','value':'mlp'}
-                                ],
-                                value='mlp',
-                                id='ml-model-disc',
-                                clearable=False,
-                                style={'margin':'15px 0'}
-                            ),
-                        ],width=7)
-                    ],style={'display':'none'}),
-                    # mlp selections
+                        dbc.Col(html.P("Epoch: "),width=2),
+                        dbc.Col(html.P(id='epoch-gan'),width=1),
+                        dbc.Col(dcc.Slider(
+                            id='epoch-slider-gan',
+                            value=50,
+                            marks={i*50: (str(i*50)) for i in range(11)},
+                            max=500,
+                            step=50,
+                            min=0
+                        ),width=9)
+                    ],style={'padding-bottom':'50px'}),
+
                     dbc.Row([
                         dbc.Col([
-                            html.Div(id="mlp-selection-gan"),
+                            dbc.Row([
+                                dbc.Col(html.P("Generator Learning Rate:"), width=6),
+                                dbc.Col(html.P(id='lr-generator'), width=2, style={'text-align':'left'}),
+                                dbc.Col(width=4)
+                            ]),
+                            dbc.Row([
+                                dbc.Col(width=1),
+
+                                dbc.Col(html.P("Base:"),width=2),
+
+                                dbc.Col(dcc.Input(id='lr-base-gen', type='number', value=1, max=9, min=1, style={'width':'30px', 'text-align':'center'}),width=2),
+
+                                dbc.Col(html.P("Power:"),width=2),
+
+                                dbc.Col(dcc.Slider(id='lr-exponent-gen', value=-3, marks={(i-10):(str(i-10)) for i in range(11)}, max=0, min=-10, step=1)),
+                            ])
                         ])
-                    ]),
+                    ],style={'padding-bottom':'25px'}),
+
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Row([
+                                dbc.Col(html.P("Discriminator Learning Rate:"), width=6),
+                                dbc.Col(html.P(id='lr-discriminator'), width=2, style={'text-align':'left'}),
+                                dbc.Col(width=3)
+                            ]),
+                            dbc.Row([
+                                dbc.Col(width=1),
+
+                                dbc.Col(html.P("Base:"),width=2),
+
+                                dbc.Col(dcc.Input(id='lr-base-disc', type='number', value=1, max=9, min=1, style={'width':'30px', 'text-align':'center'}),width=2),
+
+                                dbc.Col(html.P("Power:"),width=2),
+
+                                dbc.Col(dcc.Slider(id='lr-exponent-disc', value=-3, marks={(i-10):(str(i-10)) for i in range(11)}, max=0, min=-10, step=1)),
+                            ])
+                        ])
+                    ], style={'margin-bottom':'30px'}),
+                   
                     # buttons
                     dbc.Row([
                         dbc.Col([
@@ -123,3 +164,51 @@ layout = html.Div([
     ),
     html.Div(id='feature_columns',style={'display':'none'})
 ])
+
+
+# ======================================================================================================================
+# =================================================== CALLBACKS ========================================================
+# ======================================================================================================================
+
+
+
+@app.callback(
+    Output(component_id='gan_graphs',component_property="children"),
+    [Input(component_id='gan-interval',component_property='n_intervals')],
+)
+def show_pause_reset_buttons(n):
+
+    d_losses,g_losses = [],[]
+
+    return html.Div([
+        dbc.Row([
+            dbc.Col([
+                html.H4('Loss of Generator',style={'text-align':'center'}),
+                dcc.Graph(id='gen-loss',
+                    figure = {
+                        'data' : [
+                            {'x':list(range(len(g_losses))), 'y':g_losses, 'type':'line', 'name':'Train'},
+                        ],
+                        'layout' : {
+                            'title' : 'Loss of the Generator per iteration.',
+                            'paper_bgcolor':'rgba(0,0,0,0)',
+                        }
+                    },
+                )
+            ],width=6),
+            dbc.Col([
+                html.H4('Loss of Discriminator',style={'text-align':'center'}),
+                dcc.Graph(id='disc-loss',
+                    figure = {
+                        'data' : [
+                            {'x':list(range(len(d_losses))), 'y':d_losses, 'type':'line', 'name':'Train'},
+                        ],
+                        'layout' : {
+                            'title' : 'Loss of the Discriminator per iteration.',
+                            'paper_bgcolor':'rgba(0,0,0,0)',
+                        }
+                    },
+                )
+            ],width=6),
+        ])
+    ])
