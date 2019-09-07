@@ -1,12 +1,29 @@
+# Dash Imports
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from app import app
 
+#AWS Imports
 import boto3
 
-client = boto3.client('dynamodb')
+#PyTorch Imports
+import torch
+import torchvision
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.autograd import Variable
+
+s3 = boto3.resource("s3")
+client_s3 = boto3.client('s3')
+client_db = boto3.client('dynamodb')
+
+
+# ======================================================================================================================
+# =================================================== COMPONENTS =======================================================
+# ======================================================================================================================
 
 layout = html.Div([
 
@@ -145,7 +162,7 @@ layout = html.Div([
                     ],style={'padding':'25px 0 0 0'})
                 ],width=4),
                 # graphs output
-                dbc.Col(id='gan_graphs',style={'padding':'0 100px'})
+                dbc.Col(id='gan-graphs',style={'padding':'0 100px'})
             ])
         ],style={'padding':'50px'}),
     ]),
@@ -158,8 +175,13 @@ layout = html.Div([
         )
     ]),
     dcc.ConfirmDialog(
-        id='training_gan',
-        message='GAN PARAMETERS SUBMITTED',
+        id='start-gan',
+        message='GAN Parameters Submitted\nStarted Training...',
+                 
+    ),
+    dcc.ConfirmDialog(
+        id='finish-gan',
+        message='Training is Completed!\nView Results on the next tab.',
                  
     ),
     html.Div(id='feature_columns',style={'display':'none'})
@@ -170,13 +192,20 @@ layout = html.Div([
 # =================================================== CALLBACKS ========================================================
 # ======================================================================================================================
 
+@app.callback(
+    [Output(component_id='start-gan',component_property='displayed'),
+    Output(component_id='train-gan-btn',component_property='disabled')],
+    [Input(component_id='train-gan-btn',component_property='n_clicks')]
+)
+def show_training_start(n):
+    return (True, True)
 
 
 @app.callback(
-    Output(component_id='gan_graphs',component_property="children"),
+    Output(component_id='gan-graphs',component_property="children"),
     [Input(component_id='gan-interval',component_property='n_intervals')],
 )
-def show_pause_reset_buttons(n):
+def show_graphs(n):
 
     d_losses,g_losses = [],[]
 
@@ -212,3 +241,22 @@ def show_pause_reset_buttons(n):
             ],width=6),
         ])
     ])
+
+
+@app.callback(
+    Output(component_id='finish-gan',component_property='displayed'),
+    [Input(component_id='train-gan-btn',component_property='n_clicks')],
+    #wgan options
+    [State(component_id='name-gan',component_property='value'),
+    State(component_id='choose-dataset-value-gan',component_property='value'),
+    State(component_id='batch-size-gan',component_property='value'),
+    State(component_id='epoch-slider-gan',component_property='value'),
+    State(component_id='lr-base-gen',component_property='value'),
+    State(component_id='lr-exponent-gen',component_property='value'),
+    State(component_id='lr-base-disc',component_property='value'),
+    State(component_id='lr-exponent-disc',component_property='value')]
+)
+
+def gan_training(n_clicks,gan_name,dataset,batch_size,max_epoch,lr_base_gen,lr_exp_gen,lr_base_disc,lr_exp_disc):
+
+    return True
