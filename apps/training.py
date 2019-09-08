@@ -16,9 +16,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 
+#ganlib Imports
+from .ganlib.processing import Processing
+from .ganlib.dcgan import DCGAN
+
 s3 = boto3.resource("s3")
 client_s3 = boto3.client('s3')
 client_db = boto3.client('dynamodb')
+
+d_losses,g_losses = [],[]
 
 
 # ======================================================================================================================
@@ -86,13 +92,12 @@ layout = html.Div([
                         dbc.Col(html.P("Batch-Size: "),width=3,style={'display':'flex','flex-direction':'row','align-items':'center'}),
                         dbc.Col(dcc.Dropdown(
                             options=[
-                                {'label':'128','value':128},
-                                {'label':'256','value':256},
-                                {'label':'512','value':512},
-                                {'label':'1024','value':1024},
-                                {'label':'2048','value':2048},
+                                {'label':'100','value':100},
+                                {'label':'200','value':200},
+                                {'label':'500','value':500},
+                                {'label':'1000','value':1000},
                             ],
-                            value='1024',
+                            value=100,
                             id='batch-size-gan',
                             clearable=False,
                             style={'margin':'15px 0'}
@@ -128,7 +133,7 @@ layout = html.Div([
 
                                 dbc.Col(html.P("Power:"),width=2),
 
-                                dbc.Col(dcc.Slider(id='lr-exponent-gen', value=-3, marks={(i-10):(str(i-10)) for i in range(11)}, max=0, min=-10, step=1)),
+                                dbc.Col(dcc.Slider(id='lr-exponent-gen', value=-4, marks={(i-10):(str(i-10)) for i in range(11)}, max=0, min=-10, step=1)),
                             ])
                         ])
                     ],style={'padding-bottom':'25px'}),
@@ -149,7 +154,7 @@ layout = html.Div([
 
                                 dbc.Col(html.P("Power:"),width=2),
 
-                                dbc.Col(dcc.Slider(id='lr-exponent-disc', value=-3, marks={(i-10):(str(i-10)) for i in range(11)}, max=0, min=-10, step=1)),
+                                dbc.Col(dcc.Slider(id='lr-exponent-disc', value=-4, marks={(i-10):(str(i-10)) for i in range(11)}, max=0, min=-10, step=1)),
                             ])
                         ])
                     ], style={'margin-bottom':'30px'}),
@@ -207,8 +212,6 @@ def show_training_start(n):
 )
 def show_graphs(n):
 
-    d_losses,g_losses = [],[]
-
     return html.Div([
         dbc.Row([
             dbc.Col([
@@ -258,5 +261,17 @@ def show_graphs(n):
 )
 
 def gan_training(n_clicks,gan_name,dataset,batch_size,max_epoch,lr_base_gen,lr_exp_gen,lr_base_disc,lr_exp_disc):
+
+    #Preprocessing
+    process = Processing()
+    train_loader,_ = process.fit_transform(dataset,batch_size)
+
+    #Training
+    model = DCGAN(z_dim=100,dataset=process.train_dataset,lr_g=lr_base_gen*pow(10,lr_exp_gen),lr_d=lr_base_disc*pow(10,lr_exp_disc))
+    D_losses,G_losses = model.fit(train_loader,max_epoch,batch_size)
+    
+    #Saving Models and Generated Images
+    model.save_model(gan_name)
+    model.generate(batch_size,save=True)
 
     return True

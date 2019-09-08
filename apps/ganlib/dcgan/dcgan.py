@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -71,12 +72,12 @@ class DCGAN():
         self.z_dim = z_dim
         self.data_dim = dataset.data.size(1) * dataset.data.size(2)
 
-        self.G = Generator(g_input_dim = z_dim, g_output_dim = data_dim)
-        self.D = Discriminator(data_dim)
+        self.G = Generator(g_input_dim = self.z_dim, g_output_dim = self.data_dim)
+        self.D = Discriminator(self.data_dim)
         
         self.loss = nn.BCELoss() 
-        self.G_optimizer = optim.Adam(G.parameters(), lr = lr_g)
-        self.D_optimizer = optim.Adam(D.parameters(), lr = lr_d)
+        self.G_optimizer = optim.Adam(self.G.parameters(), lr = lr_g)
+        self.D_optimizer = optim.Adam(self.D.parameters(), lr = lr_d)
 
 
     #Hidden functions
@@ -123,32 +124,34 @@ class DCGAN():
 
 
     #Callable functions
-    def fit(self,train_loader,max_epoch,batch_size):
+    def fit(self,dataloader,max_epoch,batch_size):
 
         D_total_losses,G_total_losses = [],[]
 
         for epoch in range(1, max_epoch+1):           
             D_losses, G_losses = [], []
-            for batch_idx, (x, _) in enumerate(train_loader):
-                D_losses.append(self.__D_train(x))
-                G_losses.append(self.__G_train(x))
+            for batch_idx, (x, _) in enumerate(dataloader):
+                D_losses.append(self.__D_train(x,batch_size))
+                G_losses.append(self.__G_train(x,batch_size))
             D_total_losses.append(torch.mean(torch.FloatTensor(D_losses)))
             G_total_losses.append(torch.mean(torch.FloatTensor(G_losses)))
             
             print('[%d/%d]: loss_d: %.3f, loss_g: %.3f' % (
-                    (epoch), n_epoch, torch.mean(torch.FloatTensor(D_losses)), torch.mean(torch.FloatTensor(G_losses))))
+                    (epoch), max_epoch, torch.mean(torch.FloatTensor(D_losses)), torch.mean(torch.FloatTensor(G_losses))))
 
         return D_total_losses,G_total_losses
 
 
-    def generate(self,batch_size):
+    def generate(self,batch_size,save):
 
         with torch.no_grad():
             test_z = Variable(torch.randn(batch_size, self.z_dim))
             generated = self.G(test_z)
 
             image = generated.view(generated.size(0), 1, 28, 28)
-            client.put_object(Bucket="gan-dashboard",Key="generated-images/{0}.png".format(name_of_file),Body=image)
+            
+            if save:
+                client.put_object(Bucket="gan-dashboard",Key="generated-images/{0}.png".format(name_of_file),Body=image)
 
 
     def load_state_dict(self,name_of_file='default_model'):

@@ -16,27 +16,27 @@ class Processing:
 
 
     #Hidden functions
-    def __choose_dataset(dataset):
+    def __choose_dataset(self,dataset):
 
         if dataset == 'mnist':
-            self.train_dataset = torchvision.datasets.MNIST(root='./data', train=True, transform=transform, download=False)
-            self.test_dataset = torchvision.datasets.MNIST(root='./data', train=False, transform=transform, download=False)
+            self.train_dataset = torchvision.datasets.MNIST(root='./data', train=True, transform=self.transform, download=False)
+            self.test_dataset = torchvision.datasets.MNIST(root='./data', train=False, transform=self.transform, download=False)
         elif dataset == 'fashion_mnist':
-            self.train_dataset = torchvision.datasets.FashionMNIST(root='./data', train=True, transform=transform, download=False)
-            self.test_dataset = torchvision.datasets.FashionMNIST(root='./data', train=False, transform=transform, download=False)
+            self.train_dataset = torchvision.datasets.FashionMNIST(root='./data', train=True, transform=self.transform, download=False)
+            self.test_dataset = torchvision.datasets.FashionMNIST(root='./data', train=False, transform=self.transform, download=False)
         elif dataset == 'kmnist':
-            self.train_dataset = torchvision.datasets.KMNIST(root='./data', train=True, transform=transform, download=False)
-            self.test_dataset = torchvision.datasets.KMNIST(root='./data', train=False, transform=transform, download=False)
+            self.train_dataset = torchvision.datasets.KMNIST(root='./data', train=True, transform=self.transform, download=False)
+            self.test_dataset = torchvision.datasets.KMNIST(root='./data', train=False, transform=self.transform, download=False)
         elif dataset == 'emnist':
-            self.train_dataset = torchvision.datasets.EMNIST(root='./data', train=True, transform=transform, download=False)
-            self.test_dataset = torchvision.datasets.EMNIST(root='./data', train=False, transform=transform, download=False)
+            self.train_dataset = torchvision.datasets.EMNIST(root='./data', train=True, transform=self.transform, download=False)
+            self.test_dataset = torchvision.datasets.EMNIST(root='./data', train=False, transform=self.transform, download=False)
         elif dataset == 'qmnist':
-            self.train_dataset = torchvision.datasets.QMNIST(root='./data', train=True, transform=transform, download=False)
-            self.test_dataset = torchvision.datasets.QMNIST(root='./data', train=False, transform=transform, download=False)
+            self.train_dataset = torchvision.datasets.QMNIST(root='./data', train=True, transform=self.transform, download=False)
+            self.test_dataset = torchvision.datasets.QMNIST(root='./data', train=False, transform=self.transform, download=False)
         
 
     #Callable functions
-    def fit_transform(dataset,batch_size=256):
+    def fit_transform(self,dataset,batch_size=256):
         
         self.__choose_dataset(dataset)
         train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=batch_size ,shuffle=True)
