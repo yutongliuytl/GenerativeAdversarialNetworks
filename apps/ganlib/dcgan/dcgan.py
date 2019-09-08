@@ -3,6 +3,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 
+import boto3
+import s3fs
+
+s3 = boto3.resource("s3")
+client_s3 = boto3.client('s3')
+client_db = boto3.client('dynamodb')
+
 
 __all__ = [
     'DCGAN',
@@ -73,7 +80,7 @@ class DCGAN():
 
 
     #Hidden functions
-    def __G_train(x,batch_size):
+    def __G_train(self,x,batch_size):
     
         self.G.zero_grad()
 
@@ -90,7 +97,7 @@ class DCGAN():
         return G_loss.data.item()
 
     
-    def __D_train(x,batch_size):
+    def __D_train(self,x,batch_size):
     
         self.D.zero_grad()
 
@@ -116,7 +123,7 @@ class DCGAN():
 
 
     #Callable functions
-    def fit(train_loader,max_epoch,batch_size):
+    def fit(self,train_loader,max_epoch,batch_size):
 
         D_total_losses,G_total_losses = [],[]
 
@@ -133,6 +140,36 @@ class DCGAN():
 
         return D_total_losses,G_total_losses
 
+
+    def generate(self,batch_size):
+
+        with torch.no_grad():
+            test_z = Variable(torch.randn(batch_size, self.z_dim))
+            generated = self.G(test_z)
+
+            image = generated.view(generated.size(0), 1, 28, 28)
+            client.put_object(Bucket="gan-dashboard",Key="generated-images/{0}.png".format(name_of_file),Body=image)
+
+
+    def load_state_dict(self,name_of_file='default_model'):
+
+        # Loading discriminator
+        data = client.get_object(Bucket="gan-dashboard", Key="models/discriminator/{0}.pth".format(name_of_file))
+        param = pickle.loads(data["Body"].read())
+        self.D.load_state_dict(param)
+
+        # Loading generator
+        data = client.get_object(Bucket="gan-dashboard", Key="models/generator/{0}.pth".format(name_of_file))
+        param = pickle.loads(data["Body"].read())
+        self.G.load_state_dict(param)
+
     
-    def save_model():
-        return
+    def save_model(self,name_of_file='default_model'):
+
+        # Saving discriminator
+        data = pickle.dumps(self.D.state_dict()) 
+        client.put_object(Bucket="gan-dashboard",Key="models/discriminator/{0}.pth".format(name_of_file),Body=data)
+
+        # Saving generator
+        data = pickle.dumps(self.G.state_dict()) 
+        client.put_object(Bucket="gan-dashboard",Key="models/generator/{0}.pth".format(name_of_file),Body=data)
