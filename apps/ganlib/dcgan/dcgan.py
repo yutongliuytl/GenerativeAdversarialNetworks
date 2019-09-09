@@ -3,9 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
+from torchvision.utils import save_image
 
 import boto3
 import s3fs
+import pickle
+from PIL import Image
+import io
 
 s3 = boto3.resource("s3")
 client_s3 = boto3.client('s3')
@@ -142,27 +146,27 @@ class DCGAN():
         return D_total_losses,G_total_losses
 
 
-    def generate(self,batch_size,save):
+    def generate(self,batch_size,name_of_file,save):
 
         with torch.no_grad():
             test_z = Variable(torch.randn(batch_size, self.z_dim))
             generated = self.G(test_z)
 
-            image = generated.view(generated.size(0), 1, 28, 28)
+            image = generated.view(generated.size(0), 1, 28, 28).detach().numpy()
             
             if save:
-                client.put_object(Bucket="gan-dashboard",Key="generated-images/{0}.png".format(name_of_file),Body=image)
+                save_image(generated.view(generated.size(0), 1, 28, 28), './sample_' + '.png')
 
 
     def load_state_dict(self,name_of_file='default_model'):
 
         # Loading discriminator
-        data = client.get_object(Bucket="gan-dashboard", Key="models/discriminator/{0}.pth".format(name_of_file))
+        data = client_s3.get_object(Bucket="gan-dashboard", Key="models/discriminator/{0}.pth".format(name_of_file))
         param = pickle.loads(data["Body"].read())
         self.D.load_state_dict(param)
 
         # Loading generator
-        data = client.get_object(Bucket="gan-dashboard", Key="models/generator/{0}.pth".format(name_of_file))
+        data = client_s3.get_object(Bucket="gan-dashboard", Key="models/generator/{0}.pth".format(name_of_file))
         param = pickle.loads(data["Body"].read())
         self.G.load_state_dict(param)
 
@@ -171,8 +175,8 @@ class DCGAN():
 
         # Saving discriminator
         data = pickle.dumps(self.D.state_dict()) 
-        client.put_object(Bucket="gan-dashboard",Key="models/discriminator/{0}.pth".format(name_of_file),Body=data)
+        client_s3.put_object(Bucket="gan-dashboard",Key="models/discriminator/{0}.pth".format(name_of_file),Body=data)
 
         # Saving generator
         data = pickle.dumps(self.G.state_dict()) 
-        client.put_object(Bucket="gan-dashboard",Key="models/generator/{0}.pth".format(name_of_file),Body=data)
+        client_s3.put_object(Bucket="gan-dashboard",Key="models/generator/{0}.pth".format(name_of_file),Body=data)

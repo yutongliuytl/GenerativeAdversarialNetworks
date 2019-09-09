@@ -272,6 +272,6 @@ def gan_training(n_clicks,gan_name,dataset,batch_size,max_epoch,lr_base_gen,lr_e
     
     #Saving Models and Generated Images
     model.save_model(gan_name)
-    model.generate(batch_size,save=True)
+    model.generate(batch_size,gan_name,save=True)
 
     return True
