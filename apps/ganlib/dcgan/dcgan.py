@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
-from torchvision.utils import save_image
+from torchvision.utils import save_image,make_grid
 
 import boto3
 import s3fs
@@ -85,7 +85,7 @@ class DCGAN():
 
 
     #Hidden functions
-    def __G_train(self,x,batch_size):
+    def _G_train(self,x,batch_size):
     
         self.G.zero_grad()
 
@@ -102,7 +102,7 @@ class DCGAN():
         return G_loss.data.item()
 
     
-    def __D_train(self,x,batch_size):
+    def _D_train(self,x,batch_size):
     
         self.D.zero_grad()
 
@@ -126,6 +126,19 @@ class DCGAN():
             
         return  D_loss.data.item()
 
+    
+    def _save_image(tensor, filename, nrow=8, padding=2, normalize=False, range=None, scale_each=False, pad_value=0):
+   
+        grid = make_grid(tensor, nrow=nrow, padding=padding, pad_value=pad_value,
+                        normalize=normalize, range=range, scale_each=scale_each)
+        
+        # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
+        ndarr = grid.mul_(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to('cpu', torch.uint8).numpy()
+        im = Image.fromarray(ndarr)
+        in_mem_file = io.BytesIO()
+        im.save(in_mem_file, format="JPEG")
+        client_s3.put_object(Bucket="gan-dashboard",Key="generated-images/{0}.jpeg".format(filename),Body=in_mem_file)
+        
 
     #Callable functions
     def fit(self,dataloader,max_epoch,batch_size):
@@ -135,8 +148,8 @@ class DCGAN():
         for epoch in range(1, max_epoch+1):           
             D_losses, G_losses = [], []
             for batch_idx, (x, _) in enumerate(dataloader):
-                D_losses.append(self.__D_train(x,batch_size))
-                G_losses.append(self.__G_train(x,batch_size))
+                D_losses.append(self._D_train(x,batch_size))
+                G_losses.append(self._G_train(x,batch_size))
             D_total_losses.append(torch.mean(torch.FloatTensor(D_losses)))
             G_total_losses.append(torch.mean(torch.FloatTensor(G_losses)))
             
@@ -155,7 +168,7 @@ class DCGAN():
             image = generated.view(generated.size(0), 1, 28, 28).detach().numpy()
             
             if save:
-                save_image(generated.view(generated.size(0), 1, 28, 28), './sample_' + '.png')
+                self._save_image(generated.view(generated.size(0), 1, 28, 28), name_of_file)
 
 
     def load_state_dict(self,name_of_file='default_model'):
