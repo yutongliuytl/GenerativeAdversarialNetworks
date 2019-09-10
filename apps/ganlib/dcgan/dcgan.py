@@ -126,9 +126,9 @@ class DCGAN():
             
         return  D_loss.data.item()
 
-    
-    def _save_image(tensor, filename, nrow=8, padding=2, normalize=False, range=None, scale_each=False, pad_value=0):
-   
+
+    def _save_image(self, tensor, filename, nrow=8, padding=2, normalize=False, range=None, scale_each=False, pad_value=0):
+
         grid = make_grid(tensor, nrow=nrow, padding=padding, pad_value=pad_value,
                         normalize=normalize, range=range, scale_each=scale_each)
         
@@ -137,7 +137,7 @@ class DCGAN():
         im = Image.fromarray(ndarr)
         in_mem_file = io.BytesIO()
         im.save(in_mem_file, format="JPEG")
-        client_s3.put_object(Bucket="gan-dashboard",Key="generated-images/{0}.jpeg".format(filename),Body=in_mem_file)
+        client_s3.put_object(Bucket="gan-dashboard",Key="generated-images/{0}.jpeg".format(filename),Body=in_mem_file.getvalue())
         
 
     #Callable functions
@@ -165,10 +165,10 @@ class DCGAN():
             test_z = Variable(torch.randn(batch_size, self.z_dim))
             generated = self.G(test_z)
 
-            image = generated.view(generated.size(0), 1, 28, 28).detach().numpy()
+            image = generated.view(generated.size(0), 1, 28, 28)
             
             if save:
-                self._save_image(generated.view(generated.size(0), 1, 28, 28), name_of_file)
+                self._save_image(image, name_of_file)
 
 
     def load_state_dict(self,name_of_file='default_model'):
