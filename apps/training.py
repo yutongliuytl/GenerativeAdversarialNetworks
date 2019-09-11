@@ -54,7 +54,7 @@ layout = html.Div([
     dbc.Row([
         dbc.Col([
             # page title
-            dbc.Row(dbc.Col([html.H3("Training Parameters")],style={'padding-bottom':'50px','padding-top':'25px'},width=12)),
+            dbc.Row(dbc.Col([html.H3("Training Parameters")],style={'padding-bottom':'30px','padding-top':'10px'},width=12)),
             #page content
             dbc.Row([
                 # training parameters
@@ -141,9 +141,9 @@ layout = html.Div([
                     dbc.Row([
                         dbc.Col([
                             dbc.Row([
-                                dbc.Col(html.P("Discriminator Learning Rate:"), width=6),
+                                dbc.Col(html.P("Discriminator Learning Rate:"), width=8),
                                 dbc.Col(html.P(id='lr-discriminator'), width=2, style={'text-align':'left'}),
-                                dbc.Col(width=3)
+                                dbc.Col(width=1)
                             ], style={'margin-bottom':'10px'}),
                             dbc.Row([
                                 dbc.Col(width=1),
@@ -164,12 +164,12 @@ layout = html.Div([
                         dbc.Col([
                             dbc.Button("Train Model", id='train-gan-btn', outline=True, color="success", className="mr-1")
                         ],style={'text-align':'center'},id='train-gan'),
-                    ],style={'padding':'25px 0 0 0'})
+                    ],style={'padding':'10px 0 0 0'})
                 ],width=4),
                 # graphs output
-                dbc.Col(id='gan-graphs',style={'padding':'0 100px'})
+                dbc.Col(id='gan-graphs',style={'padding':'0 15px'})
             ])
-        ],style={'padding':'50px'}),
+        ],style={'padding':'25px 50px 40px 50px'}),
     ]),
     # intervals
     html.Div([

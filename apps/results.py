@@ -6,7 +6,10 @@ from app import app
 
 import boto3
 
-client = boto3.client('dynamodb')
+s3 = boto3.resource("s3")
+client_s3 = boto3.client('s3')
+client_db = boto3.client('dynamodb')
+
 
 layout = html.Div([
 
@@ -30,11 +33,11 @@ layout = html.Div([
 
     html.Div([
         # page title
-        dbc.Row(dbc.Col([html.H3('Generated Data Insights')],style={'padding-bottom':'25px'},width=12)),
+        dbc.Row(dbc.Col([html.H3('Generated Data Insights')],style={'padding':'35px 0 75px 0','margin-left':'-20px'},width=12)),
         # Page Content
         dbc.Row([
             dbc.Col([
-                html.Div(id='data_insight',style={'margin-left': '-10px'})                
+                html.Div([],id='data_insight',style={'margin-left': '-10px'})                
             ],width=10),
             dbc.Col([
                 dbc.Row([
@@ -83,3 +86,38 @@ layout = html.Div([
         ]),
     ],style={'margin':'0 auto','width':'90%'}),    
 ])
+
+
+# ======================================================================================================================
+# =================================================== CALLBACKS ========================================================
+# ======================================================================================================================
+@app.callback(
+    Output(component_id='data_insight', component_property='children'),
+    [Input(component_id='random_sample',component_property='n_clicks'),],
+    # [State(component_id='choose-dataset-value',component_property='value')]
+)
+def return_dataframe_random(n):
+    name_of_file = "default_gan"
+    img = client_s3.get_object(Bucket="gan-dashboard", Key="generated-images/{0}.jpeg".format(name_of_file))
+
+    return dbc.Container([
+            dbc.Col(html.Img(src="https://gan-dashboard.s3.amazonaws.com/generated-images/default_gan.jpeg"))
+        ])
+
+
+# @app.callback(
+#     Output(component_id='epoch_display',component_property='children'),
+#     [Input(component_id='choose-dataset-value',component_property='value')]
+# )
+# def return_epoch_list(dataset):
+
+#     epochs = wgan_index[dataset]
+
+#     return dcc.Dropdown(
+#             options=epochs,
+#             value=0,
+#             id='choose-epoch',
+#             clearable=False,
+#             style={'margin':'15px 0'}
+#         )
+
