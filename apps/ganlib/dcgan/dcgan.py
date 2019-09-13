@@ -71,8 +71,9 @@ class Discriminator(nn.Module):
 
 class DCGAN():
 
-    def __init__(self,z_dim,dataset,lr_g = 0.0002,lr_d = 0.0002):
+    def __init__(self,name,z_dim,dataset,lr_g = 0.0002,lr_d = 0.0002):
         
+        self.name = name
         self.z_dim = z_dim
         self.data_dim = dataset.data.size(1) * dataset.data.size(2)
 
@@ -98,7 +99,7 @@ class DCGAN():
 
         G_loss.backward()
         self.G_optimizer.step()
-            
+
         return G_loss.data.item()
 
     
@@ -137,7 +138,7 @@ class DCGAN():
         im = Image.fromarray(ndarr)
         in_mem_file = io.BytesIO()
         im.save(in_mem_file, format="JPEG")
-        client_s3.put_object(Bucket="gan-dashboard",Key="generated-images/{0}.jpeg".format(filename),Body=in_mem_file.getvalue())
+        client_s3.put_object(Bucket="gan-dashboard",Key="generated-images/{0}/{1}.jpeg".format(self.name,filename),Body=in_mem_file.getvalue(),ACL='public-read')
         
 
     #Callable functions
@@ -152,6 +153,7 @@ class DCGAN():
                 G_losses.append(self._G_train(x,batch_size))
             D_total_losses.append(torch.mean(torch.FloatTensor(D_losses)))
             G_total_losses.append(torch.mean(torch.FloatTensor(G_losses)))
+            self.generate(batch_size,epoch)
             
             print('[%d/%d]: loss_d: %.3f, loss_g: %.3f' % (
                     (epoch), max_epoch, torch.mean(torch.FloatTensor(D_losses)), torch.mean(torch.FloatTensor(G_losses))))
@@ -159,7 +161,7 @@ class DCGAN():
         return D_total_losses,G_total_losses
 
 
-    def generate(self,batch_size,name_of_file,save):
+    def generate(self,batch_size,epoch=None,save=True):
 
         with torch.no_grad():
             test_z = Variable(torch.randn(batch_size, self.z_dim))
@@ -168,7 +170,7 @@ class DCGAN():
             image = generated.view(generated.size(0), 1, 28, 28)
             
             if save:
-                self._save_image(image, name_of_file)
+                self._save_image(image, str(epoch))
 
 
     def load_state_dict(self,name_of_file='default_model'):

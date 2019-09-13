@@ -33,52 +33,58 @@ layout = html.Div([
 
     html.Div([
         # page title
-        dbc.Row(dbc.Col([html.H3('Generated Data Insights')],style={'padding':'35px 0 75px 0','margin-left':'-20px'},width=12)),
+        dbc.Row(dbc.Col([html.H3('Generated Data Insights')],style={'padding':'35px 0 0px 0','margin-left':'-20px'},width=12)),
+        
         # Page Content
         dbc.Row([
             dbc.Col([
-                html.Div([],id='data_insight',style={'margin-left': '-10px'})                
-            ],width=10),
+                html.P('Name:',style={'align-items':'center','padding-top':'20px'})
+            ],width=1),
             dbc.Col([
+                dcc.Dropdown(
+                    options=[{'label':'gen1','value':'gen1'}],
+                    value='default_gan',
+                    id='choose_model',
+                    clearable=False,
+                    style={'margin':'15px 0'}
+                ),
+            ],style={'margin-left':'-2vh'},width=2),
+
+            dbc.Col([
+                html.P('Epoch:',style={'padding':'20px 0 0 0'})
+            ],style={"margin-left":"75px"},width=1),
+            dbc.Col(id="epoch_display",style={'margin-left':'-2vh'},width=1),  
+
+            dbc.Col([
+                html.P('Generate:',style={'padding-top':'20px'})
+            ],style={"margin-left":"75px"},width=1),
+
+            dbc.Col([
+                dbc.Button('Random',id='random_sample',className='success')
+            ],style={'align-items':'center','padding-top':'15px'},width=2)
+            
+        ],style={'padding':'25px 0 50px 0'}),
+            
+        dbc.Row([
+            dbc.Col([
+                html.Div([],id='data_insight',style={'margin-left': '-10px'})                
+            ],width=4),
+            dbc.Col([
+                
                 dbc.Row([
                     dbc.Col([ 
                         dbc.Row([
-                            dbc.Col([
-                                html.P('Name:',style={'display':'flex','flex-direction':'row','align-items':'center','padding-top':'20px'})
-                            ]),
-                                dbc.Col([
-                                    dcc.Dropdown(
-                                        options=[{'label':'gen1','value':'gen1'}],
-                                        value='gen1',
-                                        id='choose-model',
-                                        clearable=False,
-                                        style={'margin':'15px 0'}
-                                    ),
-                                ],width=8),
-                        ]),
-                    ])
-                ]),
-                dbc.Row([
-                    dbc.Col([ 
-                        dbc.Row([
-                            dbc.Col([
-                                html.P('Epoch:',style={'display':'flex','flex-direction':'row','align-items':'center','padding-top':'20px'})
-                            ]),
-                                dbc.Col(id="epoch_display",width=8),
+                            
                         ]),
                     ])
                 ]),
                 dbc.Row([
                     dbc.Col([
                         dbc.Row([
-                            dbc.Col([
-                                html.H4('Choose a random sample:')
-                            ],style={'margin-top': '40px','margin-bottom': '20px'})
+                            
                         ]),
                         dbc.Row([
-                            dbc.Col([
-                                dbc.Button('Random',id='random_sample',className='success')
-                            ])
+                            
                         ])
                     ])
                 ]),
@@ -93,31 +99,37 @@ layout = html.Div([
 # ======================================================================================================================
 @app.callback(
     Output(component_id='data_insight', component_property='children'),
-    [Input(component_id='random_sample',component_property='n_clicks'),],
+    [Input(component_id='choose_model',component_property='value'),
+    Input(component_id='choose_epoch',component_property='value')],
     # [State(component_id='choose-dataset-value',component_property='value')]
 )
-def return_dataframe_random(n):
-    name_of_file = "default_gan"
-    img = client_s3.get_object(Bucket="gan-dashboard", Key="generated-images/{0}.jpeg".format(name_of_file))
+def return_dataframe_random(model_name, epoch):
+    
+    # img = client_s3.get_object(Bucket="gan-dashboard", Key="generated-images/{0}/{1}.jpeg".format(model_name,epoch))
 
     return dbc.Container([
-            dbc.Col(html.Img(src="https://gan-dashboard.s3.amazonaws.com/generated-images/default_gan.jpeg"))
+            dbc.Col(html.Img(src="https://gan-dashboard.s3.amazonaws.com/generated-images/{0}/{1}.jpeg".format(model_name,epoch)))
         ])
 
 
-# @app.callback(
-#     Output(component_id='epoch_display',component_property='children'),
-#     [Input(component_id='choose-dataset-value',component_property='value')]
-# )
-# def return_epoch_list(dataset):
+@app.callback(
+    Output(component_id='epoch_display',component_property='children'),
+    [Input(component_id='choose_model',component_property='value')]
+)
+def return_epoch_list(dataset):
 
-#     epochs = wgan_index[dataset]
+    objs = client_s3.list_objects_v2(Bucket="gan-dashboard", Prefix="generated-images/{0}/".format(dataset))
+    epochs = []
 
-#     return dcc.Dropdown(
-#             options=epochs,
-#             value=0,
-#             id='choose-epoch',
-#             clearable=False,
-#             style={'margin':'15px 0'}
-#         )
+    for i in range(1,len(objs["Contents"])+1):
+        epochs.append({"label": i, "value": i})
+
+    return dcc.Dropdown(
+            options=epochs,
+            value=1,
+            id='choose_epoch',
+            clearable=False,
+            style={'margin':'15px 0'}
+        )
+
 
