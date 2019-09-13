@@ -4,6 +4,10 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from app import app
 
+#ganlib Imports
+from .ganlib.dcgan import DCGAN
+
+#AWS Imports
 import boto3
 
 s3 = boto3.resource("s3")
@@ -79,8 +83,17 @@ layout = html.Div([
         ],style={'padding':'25px 0 50px 0'}),
             
         dbc.Row([
+            dbc.Col([],id="epoch_image_name",width=3),
             dbc.Col([
-                html.Div([],id='data_insight',style={'margin-left': '-10px'})                
+                html.H5('Randomly Generated Image:',style={'align-items':'center','padding':'0 0 25px 0'})
+            ],width=4)
+        ]),
+        dbc.Row([
+            dbc.Col([
+                html.Div([],id='data_insight',style={'margin-left': '100px'})                
+            ],width=4),
+            dbc.Col([
+                html.Div([],id='generated_image',style={'margin-left': '100px'})                
             ],width=4)
         ]),
     ],style={'margin':'0 auto','width':'90%'}),    
@@ -127,13 +140,31 @@ def return_epoch_list(dataset):
 
 
 @app.callback(
-    Output(component_id='dataset_display',component_property='children'),
-    [Input(component_id='choose_model',component_property='value')]
+    Output(component_id='epoch_image_name',component_property='children'),
+    [Input(component_id='choose_epoch',component_property='value')]
 )
-def return_epoch_list(dataset):
+def return_epoch_image_name(epoch):
 
+    return html.H5('Epoch {0}:'.format(epoch),style={'align-items':'center','padding':'0 0 25px 0'})
+
+
+# @app.callback(
+#     Output(component_id='generated_image', component_property='children'),
+#     [Input(component_id='random_sample',component_property='n_clicks'),
+#     Input(component_id='choose-dataset-value',component_property='value'),
+#     ]
+# )
+# def return_image_random(n,model_name):
     
+#     if model_name:
 
-    return 
-
+        
+    
+#         return dbc.Container([
+#                 dash_table.DataTable(
+#                     columns=[{"name": i, "id": i} for i in df.columns],
+#                     data=df.to_dict("rows"),
+#                     style_table={'overflowX': 'scroll'}
+#                 )
+#             ])
 

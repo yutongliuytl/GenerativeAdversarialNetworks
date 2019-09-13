@@ -8,14 +8,6 @@ from app import app
 #AWS Imports
 import boto3
 
-#PyTorch Imports
-import torch
-import torchvision
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.autograd import Variable
-
 #ganlib Imports
 from .ganlib.processing import Processing
 from .ganlib.dcgan import DCGAN
