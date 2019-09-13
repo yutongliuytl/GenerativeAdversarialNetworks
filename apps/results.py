@@ -11,6 +11,19 @@ client_s3 = boto3.client('s3')
 client_db = boto3.client('dynamodb')
 
 
+def update_model_selection():
+
+    models = []
+    objs = client_s3.list_objects_v2(Bucket="gan-dashboard", Prefix="models/generator/")
+
+    for i in objs["Contents"]:
+        tag = client_s3.get_object_tagging(Bucket='gan-dashboard',Key=i["Key"])["TagSet"]
+        if(tag):
+            models.append({"label": tag[0]["Value"], "value": tag[0]["Value"]})
+
+    return models
+
+
 layout = html.Div([
 
     # navbar
@@ -42,12 +55,12 @@ layout = html.Div([
             ],width=1),
             dbc.Col([
                 dcc.Dropdown(
-                    options=[{'label':'gen1','value':'gen1'}],
+                    options=update_model_selection(),
                     value='default_gan',
                     id='choose_model',
                     clearable=False,
                     style={'margin':'15px 0'}
-                ),
+                ) 
             ],style={'margin-left':'-2vh'},width=2),
 
             dbc.Col([
@@ -68,27 +81,7 @@ layout = html.Div([
         dbc.Row([
             dbc.Col([
                 html.Div([],id='data_insight',style={'margin-left': '-10px'})                
-            ],width=4),
-            dbc.Col([
-                
-                dbc.Row([
-                    dbc.Col([ 
-                        dbc.Row([
-                            
-                        ]),
-                    ])
-                ]),
-                dbc.Row([
-                    dbc.Col([
-                        dbc.Row([
-                            
-                        ]),
-                        dbc.Row([
-                            
-                        ])
-                    ])
-                ]),
-            ],width=2)
+            ],width=4)
         ]),
     ],style={'margin':'0 auto','width':'90%'}),    
 ])
@@ -131,5 +124,16 @@ def return_epoch_list(dataset):
             clearable=False,
             style={'margin':'15px 0'}
         )
+
+
+@app.callback(
+    Output(component_id='dataset_display',component_property='children'),
+    [Input(component_id='choose_model',component_property='value')]
+)
+def return_epoch_list(dataset):
+
+    
+
+    return 
 
 

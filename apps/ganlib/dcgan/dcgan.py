@@ -193,5 +193,7 @@ class DCGAN():
         client_s3.put_object(Bucket="gan-dashboard",Key="models/discriminator/{0}.pth".format(name_of_file),Body=data)
 
         # Saving generator
+        tag = [{'Key':'name','Value': name_of_file}]
         data = pickle.dumps(self.G.state_dict()) 
         client_s3.put_object(Bucket="gan-dashboard",Key="models/generator/{0}.pth".format(name_of_file),Body=data)
+        client.put_object_tagging(Bucket="gan-dashboard",Key="models/generator/{0}.pth".format(name_of_file), Tagging={'TagSet': tag})
