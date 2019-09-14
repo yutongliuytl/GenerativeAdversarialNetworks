@@ -10,6 +10,7 @@ import s3fs
 import pickle
 from PIL import Image
 import io
+import json
 
 s3 = boto3.resource("s3")
 client_s3 = boto3.client('s3')
@@ -235,12 +236,16 @@ class DCGAN():
             for batch_idx, (x, _) in enumerate(dataloader):
                 D_losses.append(self._D_train(x,batch_size))
                 G_losses.append(self._G_train(x,batch_size))
-            D_total_losses.append(torch.mean(torch.FloatTensor(D_losses)))
-            G_total_losses.append(torch.mean(torch.FloatTensor(G_losses)))
+            D_total_losses.append(float(torch.mean(torch.FloatTensor(D_losses))))
+            G_total_losses.append(float(torch.mean(torch.FloatTensor(G_losses))))
             self.G.generate(batch_size,self.name,epoch)
+            
+            client_s3.put_object(Bucket="gan-dashboard",Key="loss/{0}.txt".format(self.name),Body=json.dumps({"d_loss": D_total_losses,"g_loss": G_total_losses}))
             
             print('[%d/%d]: loss_d: %.3f, loss_g: %.3f' % (
                     (epoch), max_epoch, torch.mean(torch.FloatTensor(D_losses)), torch.mean(torch.FloatTensor(G_losses))))
+
+        f.close()
 
         return D_total_losses,G_total_losses
 

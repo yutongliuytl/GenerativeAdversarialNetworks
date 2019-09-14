@@ -12,11 +12,12 @@ import boto3
 from .ganlib.processing import Processing
 from .ganlib.dcgan import DCGAN
 
+import json
+
 s3 = boto3.resource("s3")
 client_s3 = boto3.client('s3')
 client_db = boto3.client('dynamodb')
 
-d_losses,g_losses = [],[]
 
 
 # ======================================================================================================================
@@ -167,7 +168,7 @@ layout = html.Div([
     html.Div([
         dcc.Interval(
             id='gan-interval',
-            interval=1000*1, # in milliseconds
+            interval=10000*1, # in milliseconds
             n_intervals=0
         )
     ]),
@@ -200,9 +201,18 @@ def show_training_start(n):
 
 @app.callback(
     Output(component_id='gan-graphs',component_property="children"),
-    [Input(component_id='gan-interval',component_property='n_intervals')],
+    [Input(component_id='gan-interval',component_property='n_intervals'),
+    Input(component_id='name-gan',component_property='value')],
 )
-def show_graphs(n):
+def show_graphs(n,name):
+
+    try:
+        losses = client_s3.get_object(Bucket="gan-dashboard", Key="loss/{0}.txt".format(name))["Body"].read()
+        losses = json.loads(losses)
+        g_losses,d_losses = losses["g_loss"],losses["d_loss"]
+
+    except:
+        g_losses,d_losses = [],[]
 
     return html.Div([
         dbc.Row([
