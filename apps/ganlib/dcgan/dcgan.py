@@ -20,11 +20,13 @@ __all__ = [
     'DCGAN',
 ]
 
-class Generator(nn.Module):
+
+
+class G(nn.Module):
     
     def __init__(self, g_input_dim, g_output_dim, hidden_size=256):
         
-        super(Generator, self).__init__()      
+        super(G, self).__init__()      
         
         self.layer = nn.Sequential(
                         nn.Linear(g_input_dim, hidden_size),
@@ -43,11 +45,12 @@ class Generator(nn.Module):
         return self.output(x)
 
 
-class Discriminator(nn.Module):
+
+class D(nn.Module):
             
     def __init__(self, d_input_dim, hidden_size=1024):
             
-        super(Discriminator, self).__init__()
+        super(D, self).__init__()
             
         self.layer = nn.Sequential(
                         nn.Linear(d_input_dim, hidden_size),
@@ -69,6 +72,93 @@ class Discriminator(nn.Module):
         return self.output(x)
 
 
+
+class Generator(nn.Module):
+    
+    def __init__(self, g_input_dim, g_output_dim, hidden_size=256):
+
+        super(Generator, self).__init__()
+
+        # Model parameters            
+        self.z_dim = g_input_dim
+        self.data_dim = g_output_dim
+
+        # Initializing model
+        self.model = G(g_input_dim, g_output_dim, hidden_size)
+
+
+    # Hidden functions
+    def _save_image(self, tensor, ganname, filename, nrow=8, padding=2, normalize=False, range=None, scale_each=False, pad_value=0):
+
+        grid = make_grid(tensor, nrow=nrow, padding=padding, pad_value=pad_value,
+                        normalize=normalize, range=range, scale_each=scale_each)
+        
+        # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
+        ndarr = grid.mul_(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to('cpu', torch.uint8).numpy()
+        im = Image.fromarray(ndarr)
+        in_mem_file = io.BytesIO()
+        im.save(in_mem_file, format="JPEG")
+        client_s3.put_object(Bucket="gan-dashboard",Key="generated-images/{0}/{1}.jpeg".format(ganname,filename),Body=in_mem_file.getvalue(),ACL='public-read')
+    
+
+    # Callable functions
+    def generate(self,batch_size,name,epoch=None,save=True):
+
+        with torch.no_grad():
+            test_z = Variable(torch.randn(batch_size, self.z_dim))
+            generated = self.model(test_z)
+
+            image = generated.view(generated.size(0), 1, 28, 28)
+            
+            if save and epoch:
+                self._save_image(image, name, str(epoch))
+
+
+    def load_state_dict(self,name_of_file='default_model'):
+
+        # Loading generator
+        data = client_s3.get_object(Bucket="gan-dashboard", Key="models/generator/{0}.pth".format(name_of_file))
+        param = pickle.loads(data["Body"].read())
+        self.model.load_state_dict(param)
+
+    
+    def save_model(self,name_of_file='default_model'):
+
+        # Saving generator
+        tag = [{'Key':'name','Value': name_of_file},{'Key':'z_data','Value': str(self.z_dim)},{'Key':'data_dim','Value': str(self.data_dim)}]
+        data = pickle.dumps(self.model.state_dict()) 
+        client_s3.put_object(Bucket="gan-dashboard",Key="models/generator/{0}.pth".format(name_of_file),Body=data)
+        client_s3.put_object_tagging(Bucket="gan-dashboard",Key="models/generator/{0}.pth".format(name_of_file), Tagging={'TagSet': tag})
+
+
+
+class Discriminator(nn.Module):
+            
+    def __init__(self, d_input_dim, hidden_size=1024):
+
+        super(Discriminator, self).__init__()
+
+        # Initializing model     
+        self.model = D(d_input_dim,hidden_size)
+    
+
+    #Callable functions
+    def load_state_dict(self,name_of_file='default_model'):
+
+        # Loading discriminator
+        data = client_s3.get_object(Bucket="gan-dashboard", Key="models/discriminator/{0}.pth".format(name_of_file))
+        param = pickle.loads(data["Body"].read())
+        self.model.load_state_dict(param)
+
+    
+    def save_model(self,name_of_file='default_model'):
+
+        # Saving discriminator
+        data = pickle.dumps(self.model.state_dict()) 
+        client_s3.put_object(Bucket="gan-dashboard",Key="models/discriminator/{0}.pth".format(name_of_file),Body=data)
+
+
+
 class DCGAN():
 
     def __init__(self,name,z_dim,dataset,lr_g = 0.0002,lr_d = 0.0002):
@@ -88,13 +178,13 @@ class DCGAN():
     #Hidden functions
     def _G_train(self,x,batch_size):
     
-        self.G.zero_grad()
+        self.G.model.zero_grad()
 
         z = Variable(torch.randn(batch_size, self.z_dim))
         y = Variable(torch.ones(batch_size, 1))
 
-        G_output = self.G(z)
-        D_output = self.D(G_output)
+        G_output = self.G.model(z)
+        D_output = self.D.model(G_output)
         G_loss = self.loss(D_output, y)
 
         G_loss.backward()
@@ -105,19 +195,19 @@ class DCGAN():
     
     def _D_train(self,x,batch_size):
     
-        self.D.zero_grad()
+        self.D.model.zero_grad()
 
         x_real, y_real = x.view(-1, self.data_dim), torch.ones(batch_size, 1)
         x_real, y_real = Variable(x_real), Variable(y_real)
 
-        D_output = self.D(x_real)
+        D_output = self.D.model(x_real)
         D_real_loss = self.loss(D_output, y_real)
         D_real_score = D_output
 
         z = Variable(torch.randn(batch_size, self.z_dim))
-        x_fake, y_fake = self.G(z), Variable(torch.zeros(batch_size, 1))
+        x_fake, y_fake = self.G.model(z), Variable(torch.zeros(batch_size, 1))
 
-        D_output = self.D(x_fake)
+        D_output = self.D.model(x_fake)
         D_fake_loss = self.loss(D_output, y_fake)
         D_fake_score = D_output
 
@@ -127,19 +217,6 @@ class DCGAN():
             
         return  D_loss.data.item()
 
-
-    def _save_image(self, tensor, filename, nrow=8, padding=2, normalize=False, range=None, scale_each=False, pad_value=0):
-
-        grid = make_grid(tensor, nrow=nrow, padding=padding, pad_value=pad_value,
-                        normalize=normalize, range=range, scale_each=scale_each)
-        
-        # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
-        ndarr = grid.mul_(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to('cpu', torch.uint8).numpy()
-        im = Image.fromarray(ndarr)
-        in_mem_file = io.BytesIO()
-        im.save(in_mem_file, format="JPEG")
-        client_s3.put_object(Bucket="gan-dashboard",Key="generated-images/{0}/{1}.jpeg".format(self.name,filename),Body=in_mem_file.getvalue(),ACL='public-read')
-        
 
     #Callable functions
     def fit(self,dataloader,max_epoch,batch_size):
@@ -153,7 +230,7 @@ class DCGAN():
                 G_losses.append(self._G_train(x,batch_size))
             D_total_losses.append(torch.mean(torch.FloatTensor(D_losses)))
             G_total_losses.append(torch.mean(torch.FloatTensor(G_losses)))
-            self.generate(batch_size,epoch)
+            self.G.generate(batch_size,self.name,epoch)
             
             print('[%d/%d]: loss_d: %.3f, loss_g: %.3f' % (
                     (epoch), max_epoch, torch.mean(torch.FloatTensor(D_losses)), torch.mean(torch.FloatTensor(G_losses))))
@@ -161,39 +238,19 @@ class DCGAN():
         return D_total_losses,G_total_losses
 
 
-    def generate(self,batch_size,epoch=None,save=True):
-
-        with torch.no_grad():
-            test_z = Variable(torch.randn(batch_size, self.z_dim))
-            generated = self.G(test_z)
-
-            image = generated.view(generated.size(0), 1, 28, 28)
-            
-            if save:
-                self._save_image(image, str(epoch))
-
-
     def load_state_dict(self,name_of_file='default_model'):
 
         # Loading discriminator
-        data = client_s3.get_object(Bucket="gan-dashboard", Key="models/discriminator/{0}.pth".format(name_of_file))
-        param = pickle.loads(data["Body"].read())
-        self.D.load_state_dict(param)
-
+        self.D.load_state_dict(name_of_file)
+        
         # Loading generator
-        data = client_s3.get_object(Bucket="gan-dashboard", Key="models/generator/{0}.pth".format(name_of_file))
-        param = pickle.loads(data["Body"].read())
-        self.G.load_state_dict(param)
-
+        self.G.load_state_dict(name_of_file)
+       
     
     def save_model(self,name_of_file='default_model'):
 
         # Saving discriminator
-        data = pickle.dumps(self.D.state_dict()) 
-        client_s3.put_object(Bucket="gan-dashboard",Key="models/discriminator/{0}.pth".format(name_of_file),Body=data)
-
+        self.D.save_model(name_of_file)
+        
         # Saving generator
-        tag = [{'Key':'name','Value': name_of_file}]
-        data = pickle.dumps(self.G.state_dict()) 
-        client_s3.put_object(Bucket="gan-dashboard",Key="models/generator/{0}.pth".format(name_of_file),Body=data)
-        client.put_object_tagging(Bucket="gan-dashboard",Key="models/generator/{0}.pth".format(name_of_file), Tagging={'TagSet': tag})
+        self.G.save_model(name_of_file)

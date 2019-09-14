@@ -5,6 +5,7 @@ from dash.dependencies import Input, Output, State
 from app import app
 
 #ganlib Imports
+from .ganlib.processing import Processing
 from .ganlib.dcgan import DCGAN
 
 #AWS Imports
@@ -157,7 +158,13 @@ def return_epoch_image_name(epoch):
 # def return_image_random(n,model_name):
     
 #     if model_name:
+#             #Preprocessing
+#             process = Processing()
+#             train_loader,_ = process.fit_transform(dataset,batch_size)
 
+#             #Training
+#             model = DCGAN(model_name,z_dim=100,dataset=process.train_dataset,lr_g=lr_base_gen*pow(10,lr_exp_gen),lr_d=lr_base_disc*pow(10,lr_exp_disc))
+            
         
     
 #         return dbc.Container([
