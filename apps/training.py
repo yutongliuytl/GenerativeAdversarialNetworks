@@ -260,7 +260,7 @@ def gan_training(n_clicks,gan_name,dataset,batch_size,max_epoch,lr_base_gen,lr_e
 
     #Training
     model = DCGAN(gan_name,z_dim=100,dataset=process.train_dataset,lr_g=lr_base_gen*pow(10,lr_exp_gen),lr_d=lr_base_disc*pow(10,lr_exp_disc))
-    D_losses,G_losses = model.fit(train_loader,2,batch_size)
+    D_losses,G_losses = model.fit(train_loader,max_epoch,batch_size)
     
     #Saving Models and Generated Images
     model.save_model(gan_name)

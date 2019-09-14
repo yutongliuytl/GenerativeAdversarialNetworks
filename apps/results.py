@@ -10,10 +10,12 @@ from .ganlib.dcgan import Generator
 
 #AWS Imports
 import boto3
+from botocore.client import Config
 
 s3 = boto3.resource("s3")
 client_s3 = boto3.client('s3')
 client_db = boto3.client('dynamodb')
+config = Config(connect_timeout=5, read_timeout=5)
 
 
 def update_model_selection():
@@ -168,14 +170,18 @@ def return_epoch_image_name(epoch):
 )
 def return_image_random(n,model_name):
     
-    if model_name:
-        
+    if n and model_name:
+
         input_dim, output_dim = get_input_output(model_name)
         model = Generator(input_dim,output_dim)
         model.load_state_dict(model_name)
         model.generate(100,model_name,save=True,temp=True)
             
         return dbc.Container([
+            dbc.Col(html.Img(src="https://gan-dashboard.s3.amazonaws.com/temp/{0}.jpeg".format(model_name)))
+        ])
+    
+    return dbc.Container([
             dbc.Col(html.Img(src="https://gan-dashboard.s3.amazonaws.com/temp/{0}.jpeg".format(model_name)))
         ])
 
