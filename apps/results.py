@@ -6,7 +6,7 @@ from app import app
 
 #ganlib Imports
 from .ganlib.processing import Processing
-from .ganlib.dcgan import DCGAN
+from .ganlib.dcgan import Generator
 
 #AWS Imports
 import boto3
@@ -22,11 +22,24 @@ def update_model_selection():
     objs = client_s3.list_objects_v2(Bucket="gan-dashboard", Prefix="models/generator/")
 
     for i in objs["Contents"]:
-        tag = client_s3.get_object_tagging(Bucket='gan-dashboard',Key=i["Key"])["TagSet"]
-        if(tag):
-            models.append({"label": tag[0]["Value"], "value": tag[0]["Value"]})
+        tags = client_s3.get_object_tagging(Bucket='gan-dashboard',Key=i["Key"])["TagSet"]
+        for tag in tags:
+            if(tag["Key"] == "name"):
+                models.append({"label": tag["Value"], "value": tag["Value"]})
 
     return models
+
+
+def get_input_output(model):
+
+    tags = client_s3.get_object_tagging(Bucket='gan-dashboard',Key="models/generator/{0}.pth".format(model))["TagSet"]
+    for tag in tags:
+        if(tag["Key"] == "z_dim"):
+            z_dim = tag["Value"]
+        elif(tag["Key"] == "data_dim"):
+            data_dim = tag["Value"]
+
+    return int(z_dim),int(data_dim)
 
 
 layout = html.Div([
@@ -84,7 +97,7 @@ layout = html.Div([
         ],style={'padding':'25px 0 50px 0'}),
             
         dbc.Row([
-            dbc.Col([],id="epoch_image_name",width=3),
+            dbc.Col([],id="epoch_image_name",width=5),
             dbc.Col([
                 html.H5('Randomly Generated Image:',style={'align-items':'center','padding':'0 0 25px 0'})
             ],width=4)
@@ -92,9 +105,9 @@ layout = html.Div([
         dbc.Row([
             dbc.Col([
                 html.Div([],id='data_insight',style={'margin-left': '100px'})                
-            ],width=4),
+            ],width=7),
             dbc.Col([
-                html.Div([],id='generated_image',style={'margin-left': '100px'})                
+                html.Div([],id='generated_image',style={'margin-left': '50px'})                
             ],width=4)
         ]),
     ],style={'margin':'0 auto','width':'90%'}),    
@@ -112,8 +125,6 @@ layout = html.Div([
 )
 def return_dataframe_random(model_name, epoch):
     
-    # img = client_s3.get_object(Bucket="gan-dashboard", Key="generated-images/{0}/{1}.jpeg".format(model_name,epoch))
-
     return dbc.Container([
             dbc.Col(html.Img(src="https://gan-dashboard.s3.amazonaws.com/generated-images/{0}/{1}.jpeg".format(model_name,epoch)))
         ])
@@ -149,29 +160,22 @@ def return_epoch_image_name(epoch):
     return html.H5('Epoch {0}:'.format(epoch),style={'align-items':'center','padding':'0 0 25px 0'})
 
 
-# @app.callback(
-#     Output(component_id='generated_image', component_property='children'),
-#     [Input(component_id='random_sample',component_property='n_clicks'),
-#     Input(component_id='choose-dataset-value',component_property='value'),
-#     ]
-# )
-# def return_image_random(n,model_name):
+@app.callback(
+    Output(component_id='generated_image', component_property='children'),
+    [Input(component_id='random_sample',component_property='n_clicks'),
+    Input(component_id='choose_model',component_property='value'),
+    ]
+)
+def return_image_random(n,model_name):
     
-#     if model_name:
-#             #Preprocessing
-#             process = Processing()
-#             train_loader,_ = process.fit_transform(dataset,batch_size)
-
-#             #Training
-#             model = DCGAN(model_name,z_dim=100,dataset=process.train_dataset,lr_g=lr_base_gen*pow(10,lr_exp_gen),lr_d=lr_base_disc*pow(10,lr_exp_disc))
-            
+    if model_name:
         
-    
-#         return dbc.Container([
-#                 dash_table.DataTable(
-#                     columns=[{"name": i, "id": i} for i in df.columns],
-#                     data=df.to_dict("rows"),
-#                     style_table={'overflowX': 'scroll'}
-#                 )
-#             ])
+        input_dim, output_dim = get_input_output(model_name)
+        model = Generator(input_dim,output_dim)
+        model.load_state_dict(model_name)
+        model.generate(100,model_name,save=True,temp=True)
+            
+        return dbc.Container([
+            dbc.Col(html.Img(src="https://gan-dashboard.s3.amazonaws.com/temp/{0}.jpeg".format(model_name)))
+        ])
 
