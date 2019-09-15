@@ -3,6 +3,7 @@
 ### Description
 
 A dashboard for monitoring the training of Generative Adversarial Networks. 
+
 Prototype version: Only with selected datasets (MNIST,Fashion-MNIST,KMNIST,QMNIST,...).
 
 ### Screen Captures
