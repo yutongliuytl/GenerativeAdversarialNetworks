@@ -19,7 +19,6 @@ client_s3 = boto3.client('s3')
 client_db = boto3.client('dynamodb')
 
 
-
 # ======================================================================================================================
 # =================================================== COMPONENTS =======================================================
 # ======================================================================================================================
@@ -174,7 +173,7 @@ layout = html.Div([
     ]),
     dcc.ConfirmDialog(
         id='start-gan',
-        message='GAN Parameters Submitted\nStarted Training...',
+        message='GAN Parameters Submitted.\nStarted Training. Please be patient as the training takes some time.',
                  
     ),
     dcc.ConfirmDialog(

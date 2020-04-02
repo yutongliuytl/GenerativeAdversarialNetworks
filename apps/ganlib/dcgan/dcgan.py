@@ -245,8 +245,6 @@ class DCGAN():
             print('[%d/%d]: loss_d: %.3f, loss_g: %.3f' % (
                     (epoch), max_epoch, torch.mean(torch.FloatTensor(D_losses)), torch.mean(torch.FloatTensor(G_losses))))
 
-        f.close()
-
         return D_total_losses,G_total_losses
 
 
